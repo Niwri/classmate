@@ -4,10 +4,10 @@ from openai import OpenAI
 
 classroom_api = Blueprint('classroom', __name__)
 
-client = OpenAI(
-    # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
+# client = OpenAI(
+#     # This is the default and can be omitted
+#     api_key=os.environ.get("OPENAI_API_KEY"),
+# )
 
 ### API ROUTES ###
 @classroom_api.route('/test', methods=['GET'])

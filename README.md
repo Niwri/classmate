@@ -6,5 +6,5 @@ ClassMate is an AI-powered homework feedback and classroom analytic tool, empowe
 3.12.3
 
 ## Frameworks
-Next.JS, Flask API
+Next.JS, Flask API, Firebase
 

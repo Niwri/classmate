@@ -1,19 +1,19 @@
-from flask import Blueprint, jsonify, request, render_templates
+from flask import Blueprint, jsonify, request, render_template
 import os 
 from openai import OpenAI
 from werkzeug.utils import secure_filename
-from main import UPLOAD_FOLDER
 from pdf2image import convert_from_path
 import pytesseract
-
+import cv2 
+import numpy as np
+UPLOAD_FOLDER = 'uploads'
 homework_api = Blueprint('homework', __name__)
 ALLOWED_EXTENSIONS = {'pdf'}
 
-client = OpenAI(
-    # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
-
+# client = OpenAI(
+#     # This is the default and can be omitted
+#     api_key=os.environ.get("OPENAI_API_KEY"),
+# )
 
 ### API ROUTES ###
 @homework_api.route('/test', methods=['GET'])
@@ -42,14 +42,20 @@ def evaluate_assignment():
 
     filename = secure_filename(file.filename)
     filepath = os.path.join(UPLOAD_FOLDER, filename)
+    print(filepath)
     file.save(filepath)
-    
-    images = convert_from_path(filepath)
-    full_text = ''
+    custom_config = r"--psm 6 --oem 1 -c tessedit_char_whitelist=\"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.\^\+-*/=() \""
+    images = convert_from_path(filepath, dpi=200)
+    answerList = []
     for image in images:
-        data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+        image = np.array(image)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
-    
+        # Apply thresholding
+        _, image = cv2.threshold(image, 150, 255, cv2.THRESH_BINARY)
+
+        data = pytesseract.image_to_string(image, output_type=pytesseract.Output.STRING, config=custom_config)
+        print(data)
 
     return jsonify({
         "message": "!"

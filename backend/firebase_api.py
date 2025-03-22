@@ -1,10 +1,11 @@
 from flask import Blueprint, jsonify
 import firebase_admin
-from firebase_admin import firestore
+from firebase_admin import credentials, firestore
 
 firebase_api = Blueprint('firebase', __name__)
 
-app = firebase_admin.initialize_app()
+cred = credentials.Certificate('classmate-43cb9-firebase-adminsdk-fbsvc-c34d7233a7.json')  
+app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 ### API ROUTES ###

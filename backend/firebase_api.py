@@ -48,8 +48,44 @@ def getStudentInfo(classroom: str, student: str):
     """
     pass
 
+def getAssignmentQA(classroom: str, assignment: str):
+
+    if(collection_exists(collection_name=classroom) == False):
+        return {
+            "status": -1,
+            "message": f"{classroom} does not exist!"
+        }
+    
+    classroomCollection = db.collection(classroom)
+    assignmentDocument = classroomCollection.document("assignment-list")
+    
+    if(collection_exists(collection_name=assignment, document=assignmentDocument) == False):
+        return {
+            "status": -1,
+            "message": f"{classroom} does not exist!"
+        }
+
+    questionAnswerList = assignmentDocument.collection(assignment).document("question-answer").get()
+    if(questionAnswerList.exists == False):
+        return {
+            "status": -1,
+            "message": f"question-answer does not exist!"
+        }
+    
+    questionAnswerData = questionAnswerList.to_dict()
+    return {
+        "status": 1,
+        "message": "",
+        "questions": questionAnswerData.get("questions", []),
+        "answers": questionAnswerData.get("answers", [])
+    }
 
 
+def collection_exists(collection_name, document=None):
+    docs = db.collection(collection_name).limit(1).stream()
+    if(document is not None):
+        docs = document.collection(collection_name).limit(1).stream()
+    
+    
 
-
-
+    return any(docs) 

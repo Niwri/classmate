@@ -1,7 +1,7 @@
 import os
 
 from flask import Flask
-
+from flask_cors import CORS
 from homework_api import homework_api
 from classroom_api import classroom_api
 
@@ -10,7 +10,7 @@ app.config.from_mapping(
     SECRET_KEY='dev',
     DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
 )
-
+CORS(app)
 
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER

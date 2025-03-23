@@ -66,19 +66,20 @@ def getAssignmentQA(classroom: str, assignment: str):
         }
 
     questionAnswerList = assignmentDocument.collection(assignment).document("question-answer").get()
-    if(questionAnswerList.exists == False):
-        return {
-            "status": -1,
-            "message": f"question-answer does not exist!"
-        }
+    infoRef = assignmentDocument.collection(assignment).document("info").get()
     
     questionAnswerData = questionAnswerList.to_dict()
+    infoData = infoRef.to_dict()
     return {
         "status": 1,
         "message": "",
         "questions": questionAnswerData.get("questions", []),
-        "answers": questionAnswerData.get("answers", [])
+        "answers": questionAnswerData.get("answers", []),
+        "name": infoData.get('name', "")
+        
     }
+
+
 
 
 def collection_exists(collection_name, document=None):

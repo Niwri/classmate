@@ -128,7 +128,7 @@ def evaluate_assignment():
     
     if(currentQuestionIndex == len(questionAnswerList['questions'])):
         answerList.append(currentString)
-
+    
     for i in range(len(answerList)):
         answerList[i] = answerList[i].replace('\n', '')
 
@@ -143,6 +143,16 @@ def evaluate_assignment():
     for i in range(len(feedbackList)):
         mistakes += 1 if feedbackList[i][0] == 0 else 0
 
+    print({
+        "status": 1,
+        "feedbackList": feedbackList,
+        "questionList": questionAnswerList['questions'],
+        "solutionList": questionAnswerList['answers'],
+        "answerList": answerList,
+        "mistakes": mistakes,
+        "total": total,
+        "assignmentName": questionAnswerList['name']
+    })
     return jsonify({
         "status": 1,
         "feedbackList": feedbackList,
@@ -154,25 +164,44 @@ def evaluate_assignment():
         "assignmentName": questionAnswerList['name']
     })
 
-@homework_api.route('/generate-question', methods=['GET'])
+@homework_api.route('/generate-question', methods=['POST'])
 def generate_question():
     
     question = request.form.get('question')
+    print("Generating...")
     completion = client.chat.completions.create(
         model= "gpt-4o-mini-2024-07-18",
         messages = [
             {
                 "role": "user",
-                "content": "based on this question %s generate another question (labeled as \"question\"). The question has to be similar in difficulty and be based on the same topic. The question is targeted to a grade 7 math student (labeled as \"answer\"). The answer for the question should be just a number. Provide an answer for this question (labeled \"answer\") and two hints (labeled \"hintOne\" and \"hintTwo\") REPLY IN JSON" % (question)
+                "content": """
+                    Given this question: (%s), 
+                    Generate another question that is similar in difficulty and is based on the same topic. 
+                    Ensure that you show the equations explicitly with newlines.
+                    The question is targeted to a grade 7 math student.
+                    Provide an answer for this question and two hints.
+                    Explain the answer to the question, then fill in this JSON form at the end of your response:
+
+                    ```json
+                        {
+                            "question": (string),
+                            "answer": (string),
+                            "hintOne": (string),
+                            "hintTwo": (string)
+                        } 
+                    ```
+                """ % (question)
             }
         ]
     )
     
     promptResponse = completion.choices[0].message.content
+    print(promptResponse)
 
-    parsed_json = json.loads(promptResponse)
-    
-
+    regex_pattern = r'```json\s*(.*?)\s*```'
+    content = re.search(regex_pattern, promptResponse, re.DOTALL).group(1)
+    parsed_json = json.loads(content)
+    print(parsed_json)
     return jsonify({
         "question": parsed_json["question"],
         "answer": parsed_json["answer"],
@@ -214,15 +243,23 @@ def examineSolution(question: str, realAnswer: str, studentAnswer: str):
             {
                 "role": "user",
                 "content": """
-                        This is the math question %s. Compare the student answer (%s) to the real answer (%s). Say if its correct or not, and provide feedback to the student (labeled \"feedback\"). 
+                        This is the math question: %s.
+                        
+                        This is the student's answer: %s. 
+
+                        This is the real answer: %s. 
+                        Say if its correct or not, and provide feedback to the student. 
                         Explain the feedback as though the student is in 7th grade. 
-                        Fill in the following JSON:
+                        The answers are written with removed white spaces, so try your best to interpret them.
+                        At the end, fill in the following JSON:
+
+                        ```json
                         {
                             "mark": (0 for incorrect, 1 for correct),
                             "feedback": (Insert feedback here)
                         }
+                        ```
             
-                        REPLY IN JSON
                 """ % (question, realAnswer, studentAnswer)
             }
         ]
@@ -230,11 +267,13 @@ def examineSolution(question: str, realAnswer: str, studentAnswer: str):
     
     promptResponse = completion.choices[0].message.content
 
-    promptResponse = re.sub(r'```json\s*|\s*```', '', promptResponse.strip())
-    promptResponse = re.sub(r'\s+', ' ', promptResponse.strip())
-    
-    #print("LLM:", promptResponse)
-    parsed_json = json.loads(promptResponse)
+    regex_pattern = r'```json\s*(.*?)\s*```'
+    content = re.search(regex_pattern, promptResponse, re.DOTALL).group(1)
+    if(len(content) == 0):
+        parsed_json = json.loads(promptResponse)
+    else:
+        parsed_json = json.loads(content)
+    print(parsed_json)
     
     return (parsed_json["mark"], parsed_json["feedback"])
 
